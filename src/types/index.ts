@@ -7,6 +7,9 @@ export interface User {
   streak?: number;
   following?: string[]; // Array of creator IDs the user is following
   isCreator?: boolean; // To identify if a user can be in creator mode
+  points?: number; // For leaderboard
+  questionsAnsweredCount?: number; // For leaderboard
+  mcqsAuthored?: MCQ[]; // MCQs created by this user
   // Add other user-specific fields
 }
 
@@ -42,4 +45,3 @@ export interface CreatorStats {
   earnings: number; 
   creatorProfileViews?: number;
 }
-

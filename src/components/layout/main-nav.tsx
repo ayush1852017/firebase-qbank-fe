@@ -4,19 +4,20 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { LayoutDashboard, UserCircle, Trophy, BookOpenCheck, Edit3, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, UserCircle, Trophy, BookOpenCheck, Edit3, BarChart3, ListOrdered } from 'lucide-react'; // Added ListOrdered
 import { useUserMode } from '@/contexts/user-mode-context';
 
 const studentNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/profile', label: 'Profile', icon: UserCircle },
-  { href: '/achievements', label: 'Achievements', icon: Trophy },
   { href: '/practice', label: 'Practice Feed', icon: BookOpenCheck },
+  { href: '/leaderboard', label: 'Leaderboard', icon: ListOrdered },
+  { href: '/achievements', label: 'Achievements', icon: Trophy },
+  { href: '/profile', label: 'Profile', icon: UserCircle },
 ];
 
 const creatorNavItems = [
   { href: '/dashboard', label: 'Creator Dashboard', icon: BarChart3 },
-  { href: '/mcq-creator', label: 'Create MCQ', icon: Edit3 },
+  { href: '/mcq-creator', label: 'MCQ Hub', icon: Edit3 }, // Renamed for clarity as it's a hub now
   { href: '/profile', label: 'Profile', icon: UserCircle },
 ];
 
