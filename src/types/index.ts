@@ -5,6 +5,8 @@ export interface User {
   email: string;
   name?: string;
   streak?: number;
+  following?: string[]; // Array of creator IDs the user is following
+  isCreator?: boolean; // To identify if a user can be in creator mode
   // Add other user-specific fields
 }
 
@@ -20,6 +22,8 @@ export interface MCQ {
   difficulty?: 'easy' | 'medium' | 'hard';
   isAiGenerated?: boolean;
   tags?: string[];
+  creatorId?: string; // ID of the MCQ creator
+  creatorName?: string; // Name of the MCQ creator
 }
 
 export interface BadgeType {
@@ -34,6 +38,8 @@ export interface BadgeType {
 export interface CreatorStats {
   mcqsCreated: number;
   mcqsPublished: number;
-  followers: number;
-  earnings: number; // Or a more complex earnings object
+  followers: number; // Or a more complex earnings object
+  earnings: number; 
+  creatorProfileViews?: number;
 }
+

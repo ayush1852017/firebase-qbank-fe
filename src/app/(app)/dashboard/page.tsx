@@ -5,16 +5,18 @@ import { PracticeFeed } from '@/components/practice/practice-feed';
 import { StreakCounter } from '@/components/gamification/streak-counter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Edit3, PlusCircle } from 'lucide-react';
+import { BarChart3, Edit3, PlusCircle, Users, DollarSign, TrophyIcon } from 'lucide-react'; // Updated icons
 import Link from 'next/link';
 import type { CreatorStats } from '@/types';
 import { useEffect, useState } from 'react';
+import { CreatorAnalyticsChart } from '@/components/creator/creator-analytics-chart'; // Import the new chart
 
 const initialCreatorStats: CreatorStats = {
   mcqsCreated: 15,
   mcqsPublished: 10,
-  followers: 120,
+  followers: 120, // This will remain static for now, actual following is per-user
   earnings: 250.75,
+  creatorProfileViews: 2300, // Example stat
 };
 
 
@@ -35,7 +37,6 @@ export default function DashboardPage() {
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <StreakCounter />
-            {/* Placeholder for other student stats cards */}
             <Card className="shadow-lg rounded-xl">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Questions Answered</CardTitle>
@@ -59,7 +60,7 @@ export default function DashboardPage() {
              <Card className="shadow-lg rounded-xl">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Badges Earned</CardTitle>
-                <Trophy className="h-5 w-5 text-muted-foreground" />
+                <TrophyIcon className="h-5 w-5 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-primary">5</div>
@@ -95,19 +96,21 @@ export default function DashboardPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title="MCQs Created" value={creatorStats.mcqsCreated.toString()} icon={Edit3} />
             <StatCard title="MCQs Published" value={creatorStats.mcqsPublished.toString()} icon={BarChart3} />
-            <StatCard title="Followers" value={creatorStats.followers.toString()} icon={UsersIcon} />
-            <StatCard title="Earnings" value={`$${creatorStats.earnings.toFixed(2)}`} icon={DollarSignIcon} />
+            <StatCard title="Followers" value={creatorStats.followers.toString()} icon={Users} />
+            <StatCard title="Earnings" value={`$${creatorStats.earnings.toFixed(2)}`} icon={DollarSign} />
           </div>
-          <Card className="shadow-xl rounded-xl">
+          
+          <CreatorAnalyticsChart />
+          
+          <Card className="shadow-xl rounded-xl mt-8">
             <CardHeader>
               <CardTitle className="text-2xl font-headline text-primary">Your MCQs</CardTitle>
               <CardDescription>Manage and review your created multiple-choice questions.</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Placeholder for MCQ list or management table */}
               <p className="text-muted-foreground">MCQ management interface will be here. You can view, edit, and track the status of your questions.</p>
                <div className="mt-6 text-center">
-                 <img src="https://placehold.co/600x300.png" alt="Creator Content Placeholder" className="rounded-lg shadow-md mx-auto" data-ai-hint="data analytics chart" />
+                 <img src="https://placehold.co/600x300.png" alt="Creator Content Placeholder" className="rounded-lg shadow-md mx-auto" data-ai-hint="question list" />
                </div>
             </CardContent>
           </Card>
@@ -138,15 +141,3 @@ function StatCard({ title, value, icon: Icon }: StatCardProps) {
     </Card>
   );
 }
-
-// Placeholder icons
-const Trophy = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 2.5c3.59 0 6.5 2.91 6.5 6.5s-2.91 6.5-6.5 6.5S5.5 12.59 5.5 9 8.41 2.5 12 2.5zM5.5 16H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1m14.5 0h1a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-1.5M12 16v5.5m-3-2h6"/></svg>
-);
-const UsersIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-);
-const DollarSignIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-);
-

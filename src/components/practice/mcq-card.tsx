@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Lightbulb } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Lightbulb, UserCircle } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface MCQCardProps {
   mcq: MCQ;
@@ -41,15 +42,13 @@ export function MCQCard({ mcq, onAnswered, questionNumber, totalQuestions }: MCQ
     const correct = selectedOption === mcq.correctAnswer;
     onAnswered(correct);
     if (correct) {
-      setShowExplanation(false); // Optionally hide explanation if correct, or always show after answer
+      setShowExplanation(false); 
     } else {
-      setShowExplanation(true); // Show explanation if incorrect
+      setShowExplanation(true); 
     }
   };
 
   if (!isClient) {
-    // Render a placeholder or null on the server to avoid hydration mismatch
-    // Or a loading state for the card
     return (
       <Card className="w-full max-w-2xl mx-auto shadow-xl rounded-xl overflow-hidden animate-pulse">
         <CardHeader className="bg-primary/5 p-6">
@@ -58,7 +57,7 @@ export function MCQCard({ mcq, onAnswered, questionNumber, totalQuestions }: MCQ
           {mcq.isAiGenerated && <div className="h-4 bg-muted-foreground/20 rounded w-1/3 mt-2"></div>}
         </CardHeader>
         <CardContent className="p-6 space-y-4">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(mcq.options.length || 4)].map((_, i) => (
             <div key={i} className="flex items-center space-x-3 p-3 border border-transparent rounded-lg">
               <div className="h-5 w-5 bg-muted-foreground/20 rounded-full"></div>
               <div className="h-5 bg-muted-foreground/20 rounded w-full"></div>
@@ -76,14 +75,25 @@ export function MCQCard({ mcq, onAnswered, questionNumber, totalQuestions }: MCQ
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-xl rounded-xl overflow-hidden transition-all duration-500 ease-in-out transform hover:shadow-2xl">
       <CardHeader className="bg-primary/5 p-6">
-        <CardDescription className="text-sm text-primary font-medium">
-          Question {questionNumber} of {totalQuestions} {mcq.topic ? `- Topic: ${mcq.topic}` : ''}
-        </CardDescription>
-        <CardTitle className="text-xl font-semibold text-foreground leading-relaxed">
-          {mcq.question}
-        </CardTitle>
-        {mcq.isAiGenerated && (
-          <div className="mt-2 flex items-center text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+        <div className="flex justify-between items-start">
+            <div>
+                <CardDescription className="text-sm text-primary font-medium">
+                Question {questionNumber} of {totalQuestions} {mcq.topic ? `- Topic: ${mcq.topic}` : ''}
+                </CardDescription>
+                <CardTitle className="text-xl font-semibold text-foreground leading-relaxed mt-1">
+                {mcq.question}
+                </CardTitle>
+            </div>
+            {mcq.creatorId && mcq.creatorName && (
+                 <Link href={`/creators/${mcq.creatorId}`} passHref>
+                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary p-1 h-auto self-start">
+                        <UserCircle className="h-4 w-4 mr-1"/> {mcq.creatorName}
+                    </Button>
+                 </Link>
+            )}
+        </div>
+        {mcq.isAiGenerated && !mcq.creatorName && ( // Show AI generated only if no specific creator
+          <div className="mt-2 flex items-center text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md w-fit">
             <Lightbulb className="h-4 w-4 mr-1 text-yellow-500" />
             AI-Generated Question
           </div>
