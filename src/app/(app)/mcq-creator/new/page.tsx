@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,12 @@ import * as z from "zod";
 import { PlusCircle, Trash2, Save, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context"; // Import useAuth
 
 const mcqFormSchema = z.object({
   question: z.string().min(10, "Question must be at least 10 characters long."),
   options: z.array(z.object({ text: z.string().min(1, "Option cannot be empty.") })).min(2, "At least two options are required.").max(5, "Maximum of 5 options allowed."),
-  correctAnswerIndex: z.coerce.number().min(0, "Please select a correct answer."),
+  correctAnswerIndex: z.coerce.number().min(0, "Please select a correct answer.").max(4, "Invalid correct answer index."), // Ensure it's within bounds of max options
   explanation: z.string().min(10, "Explanation must be at least 10 characters long."),
   topic: z.string().min(1, "Topic is required."),
   difficulty: z.enum(["easy", "medium", "hard"]),
@@ -28,6 +30,8 @@ type McqFormValues = z.infer<typeof mcqFormSchema>;
 export default function NewMcqPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { addMcq } = useAuth(); // Get addMcq from useAuth
+
   const { control, handleSubmit, register, formState: { errors }, watch, setValue } = useForm<McqFormValues>({
     resolver: zodResolver(mcqFormSchema),
     defaultValues: {
@@ -49,14 +53,29 @@ export default function NewMcqPage() {
   const optionsWatch = watch("options");
 
   const onSubmit = (data: McqFormValues) => {
-    console.log("MCQ Data:", data);
-    // Here you would typically send data to your backend
+    if (!addMcq) {
+        toast({ title: "Error", description: "Could not save MCQ. Auth function not available.", variant: "destructive" });
+        return;
+    }
+    
+    const mcqDataToSave = {
+      question: data.question,
+      options: data.options.map(opt => opt.text),
+      correctAnswer: data.options[data.correctAnswerIndex].text,
+      explanation: data.explanation,
+      topic: data.topic,
+      difficulty: data.difficulty,
+      tags: data.tags?.split(',').map(tag => tag.trim()).filter(tag => tag),
+    };
+
+    addMcq(mcqDataToSave);
+    
     toast({
       title: "MCQ Created!",
-      description: "Your new question has been drafted.",
+      description: "Your new question has been saved to your authored MCQs.",
       variant: "default",
     });
-    router.push("/mcq-creator"); // Redirect after successful creation
+    router.push("/mcq-creator"); 
   };
 
   return (
@@ -115,13 +134,16 @@ export default function NewMcqPage() {
                 name="correctAnswerIndex"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value === -1 ? undefined : field.value.toString()}>
+                  <Select 
+                    onValueChange={(value) => field.onChange(parseInt(value,10))} 
+                    defaultValue={field.value === -1 ? undefined : field.value.toString()}
+                  >
                     <SelectTrigger id="correctAnswerIndex" className={`mt-1 text-base ${errors.correctAnswerIndex ? 'border-destructive focus:ring-destructive' : ''}`}>
                       <SelectValue placeholder="Select the correct option" />
                     </SelectTrigger>
                     <SelectContent>
                       {optionsWatch.map((option, index) => (
-                        option.text.trim() && // Only show valid options
+                        option.text.trim() && 
                         <SelectItem key={index} value={index.toString()}>
                           {`Option ${index + 1}: ${option.text.length > 30 ? option.text.substring(0,30)+'...' : option.text}`}
                         </SelectItem>
@@ -192,18 +214,10 @@ export default function NewMcqPage() {
             <XCircle className="mr-2 h-5 w-5" /> Cancel
           </Button>
           <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Save className="mr-2 h-5 w-5" /> Save Draft
+            <Save className="mr-2 h-5 w-5" /> Save MCQ
           </Button>
-          {/* <Button type="button" onClick={handleSubmit((data) => console.log("Publish", data))} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-            <Send className="mr-2 h-5 w-5" /> Submit for Review
-          </Button> */}
         </CardFooter>
       </form>
     </Card>
   );
 }
-
-// Placeholder icon if not imported elsewhere
-const Send = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-);

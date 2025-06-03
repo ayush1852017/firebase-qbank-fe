@@ -1,6 +1,6 @@
 "use client";
 
-import type { User, MCQ } from '@/types'; // Added MCQ import
+import type { User, MCQ, Test } from '@/types'; // Added Test import
 import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -10,8 +10,9 @@ interface AuthContextType {
   login: (email: string, name?: string) => void;
   logout: () => void;
   toggleFollow: (creatorId: string) => void;
-  // Placeholder for future stat updates
   updateUserStats?: (stats: Partial<Pick<User, 'points' | 'questionsAnsweredCount' | 'streak'>>) => void;
+  addTest?: (testData: Omit<Test, 'id' | 'creatorId' | 'createdAt'>) => void;
+  addMcq?: (mcqData: Omit<MCQ, 'id' | 'creatorId' | 'creatorName'>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,8 +27,6 @@ const sampleAuthoredMCQs: MCQ[] = [
     explanation: 'The Central Processing Unit (CPU) is the brain of the computer, responsible for executing program instructions.',
     topic: 'Computer Science',
     difficulty: 'easy',
-    creatorId: 'current_user_placeholder', // Will be replaced by actual user ID
-    creatorName: 'Current User', // Will be replaced
   },
   {
     id: 'creator-mcq-2',
@@ -37,8 +36,6 @@ const sampleAuthoredMCQs: MCQ[] = [
     explanation: 'Git is a widely-used distributed version control system for tracking changes in source code during software development.',
     topic: 'Software Development',
     difficulty: 'medium',
-    creatorId: 'current_user_placeholder',
-    creatorName: 'Current User',
   }
 ];
 
@@ -50,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Simulate fetching user from localStorage or API
     try {
       const storedUser = localStorage.getItem('testChampionUser');
       if (storedUser) {
@@ -86,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...mcq,
         creatorId: userId,
         creatorName: userName,
-        id: `${userId}-${mcq.id.split('-').slice(2).join('-')}` // Ensure unique ID based on user
+        id: `${userId}-${mcq.id.split('-').slice(2).join('-') || mcq.id}` // Ensure unique ID based on user
       }));
     }
 
@@ -94,12 +90,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: userId, 
       email, 
       name: userName, 
-      streak: Math.floor(Math.random() * 10), // Random streak for demo
+      streak: Math.floor(Math.random() * 10),
       following: [],
       isCreator: isCreator,
-      points: Math.floor(Math.random() * 1000), // Random points for demo
-      questionsAnsweredCount: Math.floor(Math.random() * 200), // Random count for demo
+      points: Math.floor(Math.random() * 1000),
+      questionsAnsweredCount: Math.floor(Math.random() * 200),
       mcqsAuthored: authoredMcqsForUser,
+      testsAuthored: [], // Initialize testsAuthored
     };
     setUser(newUser);
     localStorage.setItem('testChampionUser', JSON.stringify(newUser));
@@ -122,12 +119,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const updatedUser = { ...currentUser, following: updatedFollowing };
       localStorage.setItem('testChampionUser', JSON.stringify(updatedUser));
-      console.log(isCurrentlyFollowing ? 'Unfollowed' : 'Followed', creatorId);
       return updatedUser;
     });
   }, []);
   
-  // Placeholder function for updating user stats, e.g., points, questions answered
   const updateUserStats = useCallback((stats: Partial<Pick<User, 'points' | 'questionsAnsweredCount' | 'streak'>>) => {
     setUser(currentUser => {
       if (!currentUser) return null;
@@ -137,9 +132,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const addTest = useCallback((testData: Omit<Test, 'id' | 'creatorId' | 'createdAt'>) => {
+    setUser(currentUser => {
+      if (!currentUser || !currentUser.isCreator) return currentUser;
+      const newTest: Test = {
+        ...testData,
+        id: `test-${Date.now().toString()}`,
+        creatorId: currentUser.id,
+        createdAt: new Date().toISOString(),
+      };
+      const updatedUser = {
+        ...currentUser,
+        testsAuthored: [...(currentUser.testsAuthored || []), newTest],
+      };
+      localStorage.setItem('testChampionUser', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  }, []);
+
+  const addMcq = useCallback((mcqData: Omit<MCQ, 'id' | 'creatorId' | 'creatorName'>) => {
+    setUser(currentUser => {
+      if (!currentUser || !currentUser.isCreator) return currentUser;
+      const newMcq: MCQ = {
+        ...mcqData,
+        id: `mcq-${Date.now().toString()}-${Math.random().toString(36).substring(7)}`,
+        creatorId: currentUser.id,
+        creatorName: currentUser.name,
+      };
+      const updatedUser = {
+        ...currentUser,
+        mcqsAuthored: [...(currentUser.mcqsAuthored || []), newMcq],
+      };
+      localStorage.setItem('testChampionUser', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  }, []);
+
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, toggleFollow, updateUserStats }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, toggleFollow, updateUserStats, addTest, addMcq }}>
       {children}
     </AuthContext.Provider>
   );

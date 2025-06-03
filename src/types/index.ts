@@ -10,7 +10,7 @@ export interface User {
   points?: number; // For leaderboard
   questionsAnsweredCount?: number; // For leaderboard
   mcqsAuthored?: MCQ[]; // MCQs created by this user
-  // Add other user-specific fields
+  testsAuthored?: Test[]; // Tests created by this user
 }
 
 export type UserMode = 'student' | 'creator';
@@ -29,11 +29,21 @@ export interface MCQ {
   creatorName?: string; // Name of the MCQ creator
 }
 
+export interface Test {
+  id: string;
+  title: string;
+  description?: string;
+  mcqIds: string[];
+  creatorId: string;
+  topic?: string;
+  createdAt: string; // ISO date string
+}
+
 export interface BadgeType {
   id: string;
   name: string;
   description: string;
-  Icon: LucideIcon; 
+  Icon: LucideIcon;
   achieved: boolean;
   category: string;
 }
@@ -41,7 +51,7 @@ export interface BadgeType {
 export interface CreatorStats {
   mcqsCreated: number;
   mcqsPublished: number;
-  followers: number; // Or a more complex earnings object
-  earnings: number; 
+  followers: number; 
+  earnings: number;
   creatorProfileViews?: number;
 }

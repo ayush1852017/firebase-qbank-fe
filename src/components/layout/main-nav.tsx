@@ -1,10 +1,11 @@
+
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { LayoutDashboard, UserCircle, Trophy, BookOpenCheck, Edit3, BarChart3, ListOrdered } from 'lucide-react'; // Added ListOrdered
+import { LayoutDashboard, UserCircle, Trophy, BookOpenCheck, Edit3, BarChart3, ListOrdered, FileText } from 'lucide-react'; // Added FileText
 import { useUserMode } from '@/contexts/user-mode-context';
 
 const studentNavItems = [
@@ -17,7 +18,8 @@ const studentNavItems = [
 
 const creatorNavItems = [
   { href: '/dashboard', label: 'Creator Dashboard', icon: BarChart3 },
-  { href: '/mcq-creator', label: 'MCQ Hub', icon: Edit3 }, // Renamed for clarity as it's a hub now
+  { href: '/mcq-creator', label: 'MCQ Hub', icon: Edit3 },
+  { href: '/tests', label: 'My Tests', icon: FileText }, // New "My Tests" link
   { href: '/profile', label: 'Profile', icon: UserCircle },
 ];
 
