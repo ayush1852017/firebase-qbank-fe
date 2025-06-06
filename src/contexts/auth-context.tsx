@@ -61,30 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  // This effect will handle initial redirection based on user state
-  // Specific onboarding/role-selection redirects will be handled by the src/app/page.tsx component
-  useEffect(() => {
-    if (!loading) {
-      const isAuthPage = pathname?.startsWith('/auth');
-      const isOnboardingPage = pathname?.startsWith('/onboarding');
-      const isSelectRolePage = pathname === '/select-role';
-
-      if (!user && !isAuthPage && !isOnboardingPage && !isSelectRolePage && pathname !== '/') {
-        router.push('/auth/sign-in');
-      }
-      // Redirecting from auth page if user is logged in will be handled by src/app/page.tsx
-      // after checking for onboarding or role selection needs.
-    }
-  }, [user, loading, pathname, router]);
-
 
   const login = (email: string, name?: string, roles?: UserMode[]) => {
+    setLoading(true);
     const userId = Date.now().toString();
     const userName = name || email.split('@')[0];
     
     const defaultRoles: UserMode[] = roles && roles.length > 0 ? roles : ['student'];
     const isCreator = defaultRoles.includes('creator');
-    const isNewUser = roles ? true : false; // True if roles are passed (implies signup)
+    const isNewUserBase = roles ? true : false; // True if roles are passed (implies signup)
 
     let authoredMcqsForUser: MCQ[] = [];
     if (isCreator) {
@@ -102,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: userName,
       roles: defaultRoles,
       isCreator: isCreator,
-      isNewUser: isNewUser,
+      isNewUser: isNewUserBase, // This will determine if onboarding is needed
       streak: Math.floor(Math.random() * 10),
       following: [],
       points: Math.floor(Math.random() * 1000),
@@ -112,8 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setUser(newUser);
     localStorage.setItem('testChampionUser', JSON.stringify(newUser));
-    // Redirection logic will be handled by src/app/page.tsx based on isNewUser, roles, etc.
-    router.push('/'); 
+    // Clear any previously selected mode on new login/signup
+    localStorage.removeItem('testChampionUserMode'); 
+    setLoading(false);
+    router.push('/'); // Let the HomePage handle redirection based on user state
   };
 
   const logout = () => {
@@ -128,6 +115,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!currentUser) return null;
       const updatedUser = { ...currentUser, isNewUser: false };
       localStorage.setItem('testChampionUser', JSON.stringify(updatedUser));
+      
+      // After onboarding, decide where to go
+      if (updatedUser.roles && updatedUser.roles.length > 1) {
+        router.push('/select-role');
+      } else if (updatedUser.roles && updatedUser.roles.length === 1) {
+        // If single role, automatically set it in localStorage and go to dashboard
+        localStorage.setItem('testChampionUserMode', updatedUser.roles[0]);
+        router.push('/dashboard');
+      } else {
+        // Fallback, should ideally not happen if roles are always set
+        router.push('/dashboard');
+      }
       return updatedUser;
     });
   };
