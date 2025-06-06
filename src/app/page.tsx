@@ -57,6 +57,12 @@ export default function HomePage() {
       return;
     }
 
+    // If user is fully set up and on the root path, redirect to dashboard.
+    if (pathname === '/') {
+      router.replace('/dashboard');
+      return;
+    }
+
     // Otherwise, user is on a valid app page, no redirection needed from here.
     // The AppLayout will handle redirection if user somehow logs out while on an app page.
 
@@ -67,10 +73,10 @@ export default function HomePage() {
     return <SplashLoader />;
   }
 
-  // If execution reaches here, it means it's a page that should render its content
-  // (e.g. auth pages when no user, or app pages when user is fully set up)
-  // However, for the root '/' page, we primarily use it for redirection.
-  // If a specific component should render at '/', it would go here.
-  // For now, SplashLoader covers the "loading/redirecting" state.
+  // This state means redirection logic has completed, and if the current path
+  // is not the root page, it should allow the page content to render.
+  // For the root page itself, if it reaches here, it implies an unhandled case or
+  // it's the very brief moment before a redirect takes effect.
+  // SplashLoader is a safe fallback.
   return <SplashLoader />;
 }
