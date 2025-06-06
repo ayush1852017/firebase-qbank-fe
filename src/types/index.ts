@@ -1,12 +1,15 @@
+
 import type { LucideIcon } from 'lucide-react';
 
 export interface User {
   id: string;
   email: string;
   name?: string;
+  roles: UserMode[]; // student, creator, or both
+  isCreator?: boolean; // Derived from roles, true if 'creator' is in roles
+  isNewUser?: boolean; // True if user just signed up and needs onboarding
   streak?: number;
   following?: string[]; // Array of creator IDs the user is following
-  isCreator?: boolean; // To identify if a user can be in creator mode
   points?: number; // For leaderboard
   questionsAnsweredCount?: number; // For leaderboard
   mcqsAuthored?: MCQ[]; // MCQs created by this user
@@ -51,7 +54,7 @@ export interface BadgeType {
 export interface CreatorStats {
   mcqsCreated: number;
   mcqsPublished: number;
-  followers: number; 
+  followers: number;
   earnings: number;
   creatorProfileViews?: number;
 }

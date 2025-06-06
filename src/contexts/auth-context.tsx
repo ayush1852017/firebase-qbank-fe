@@ -1,18 +1,20 @@
+
 "use client";
 
-import type { User, MCQ, Test } from '@/types'; // Added Test import
+import type { User, MCQ, Test, UserMode } from '@/types';
 import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, name?: string) => void;
+  login: (email: string, name?: string, roles?: UserMode[]) => void; // Added roles
   logout: () => void;
   toggleFollow: (creatorId: string) => void;
   updateUserStats?: (stats: Partial<Pick<User, 'points' | 'questionsAnsweredCount' | 'streak'>>) => void;
   addTest?: (testData: Omit<Test, 'id' | 'creatorId' | 'createdAt'>) => void;
   addMcq?: (mcqData: Omit<MCQ, 'id' | 'creatorId' | 'creatorName'>) => void;
+  completeOnboarding: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,22 +61,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  // This effect will handle initial redirection based on user state
+  // Specific onboarding/role-selection redirects will be handled by the src/app/page.tsx component
   useEffect(() => {
     if (!loading) {
       const isAuthPage = pathname?.startsWith('/auth');
-      if (!user && !isAuthPage && pathname !== '/') {
+      const isOnboardingPage = pathname?.startsWith('/onboarding');
+      const isSelectRolePage = pathname === '/select-role';
+
+      if (!user && !isAuthPage && !isOnboardingPage && !isSelectRolePage && pathname !== '/') {
         router.push('/auth/sign-in');
-      } else if (user && isAuthPage) {
-        router.push('/dashboard');
       }
+      // Redirecting from auth page if user is logged in will be handled by src/app/page.tsx
+      // after checking for onboarding or role selection needs.
     }
   }, [user, loading, pathname, router]);
 
 
-  const login = (email: string, name?: string) => {
+  const login = (email: string, name?: string, roles?: UserMode[]) => {
     const userId = Date.now().toString();
     const userName = name || email.split('@')[0];
-    const isCreator = Math.random() > 0.5; 
+    
+    const defaultRoles: UserMode[] = roles && roles.length > 0 ? roles : ['student'];
+    const isCreator = defaultRoles.includes('creator');
+    const isNewUser = roles ? true : false; // True if roles are passed (implies signup)
 
     let authoredMcqsForUser: MCQ[] = [];
     if (isCreator) {
@@ -82,31 +92,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...mcq,
         creatorId: userId,
         creatorName: userName,
-        id: `${userId}-${mcq.id.split('-').slice(2).join('-') || mcq.id}` // Ensure unique ID based on user
+        id: `${userId}-${mcq.id.split('-').slice(2).join('-') || mcq.id}`
       }));
     }
 
-    const newUser: User = { 
-      id: userId, 
-      email, 
-      name: userName, 
+    const newUser: User = {
+      id: userId,
+      email,
+      name: userName,
+      roles: defaultRoles,
+      isCreator: isCreator,
+      isNewUser: isNewUser,
       streak: Math.floor(Math.random() * 10),
       following: [],
-      isCreator: isCreator,
       points: Math.floor(Math.random() * 1000),
       questionsAnsweredCount: Math.floor(Math.random() * 200),
       mcqsAuthored: authoredMcqsForUser,
-      testsAuthored: [], // Initialize testsAuthored
+      testsAuthored: [],
     };
     setUser(newUser);
     localStorage.setItem('testChampionUser', JSON.stringify(newUser));
-    router.push('/dashboard');
+    // Redirection logic will be handled by src/app/page.tsx based on isNewUser, roles, etc.
+    router.push('/'); 
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('testChampionUser');
+    localStorage.removeItem('testChampionUserMode'); // Clear selected mode on logout
     router.push('/auth/sign-in');
+  };
+  
+  const completeOnboarding = () => {
+    setUser(currentUser => {
+      if (!currentUser) return null;
+      const updatedUser = { ...currentUser, isNewUser: false };
+      localStorage.setItem('testChampionUser', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
   };
 
   const toggleFollow = useCallback((creatorId: string) => {
@@ -116,13 +139,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const updatedFollowing = isCurrentlyFollowing
         ? currentUser.following?.filter(id => id !== creatorId)
         : [...(currentUser.following || []), creatorId];
-      
+
       const updatedUser = { ...currentUser, following: updatedFollowing };
       localStorage.setItem('testChampionUser', JSON.stringify(updatedUser));
       return updatedUser;
     });
   }, []);
-  
+
   const updateUserStats = useCallback((stats: Partial<Pick<User, 'points' | 'questionsAnsweredCount' | 'streak'>>) => {
     setUser(currentUser => {
       if (!currentUser) return null;
@@ -170,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, toggleFollow, updateUserStats, addTest, addMcq }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, toggleFollow, updateUserStats, addTest, addMcq, completeOnboarding }}>
       {children}
     </AuthContext.Provider>
   );
