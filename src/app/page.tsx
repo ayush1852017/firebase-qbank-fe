@@ -25,6 +25,8 @@ export default function HomePage() {
       return; // Wait for splash and auth to finish
     }
 
+    // At this point, showSplash is false AND authLoading is false.
+
     if (!user) {
       // If not logged in and not on an auth page already, redirect to sign-in
       if (!pathname.startsWith('/auth')) {
@@ -42,7 +44,8 @@ export default function HomePage() {
     }
 
     // User is not new, check for role selection if multi-role
-    const userModeSelected = localStorage.getItem('testChampionUserMode');
+    const userModeSelected = typeof window !== 'undefined' ? localStorage.getItem('testChampionUserMode') : null;
+
     if (user.roles && user.roles.length > 1 && !userModeSelected) {
       if (pathname !== '/select-role') {
         router.replace('/select-role');
@@ -73,10 +76,8 @@ export default function HomePage() {
     return <SplashLoader />;
   }
 
-  // This state means redirection logic has completed, and if the current path
-  // is not the root page, it should allow the page content to render.
-  // For the root page itself, if it reaches here, it implies an unhandled case or
-  // it's the very brief moment before a redirect takes effect.
-  // SplashLoader is a safe fallback.
-  return <SplashLoader />;
+  // If this component is still rendered after initial loading and redirection logic,
+  // it means the router is transitioning or has transitioned.
+  // Returning null is appropriate as this page's primary job is to redirect.
+  return null;
 }
