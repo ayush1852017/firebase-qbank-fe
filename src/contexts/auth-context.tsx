@@ -8,7 +8,7 @@ import { useRouter, usePathname } from 'next/navigation';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, name?: string, roles?: UserMode[]) => void;
+  login: (email: string, name?: string, rolesToSet?: UserMode[]) => void; // rolesToSet is now optional, used for updates
   logout: () => void;
   toggleFollow: (creatorId: string) => void;
   updateUserStats?: (stats: Partial<Pick<User, 'points' | 'questionsAnsweredCount' | 'streak'>>) => void;
@@ -22,7 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Sample MCQs for a creator user
 const sampleAuthoredMCQs: MCQ[] = [
   {
-    id: 'creator-mcq-1', // Base ID, will be prefixed
+    id: 'creator-mcq-1', 
     question: 'What is the primary function of a CPU in a computer?',
     options: ['Store data long-term', 'Execute instructions', 'Display graphics', 'Connect to network'],
     correctAnswer: 'Execute instructions',
@@ -31,7 +31,7 @@ const sampleAuthoredMCQs: MCQ[] = [
     difficulty: 'easy',
   },
   {
-    id: 'creator-mcq-2', // Base ID, will be prefixed
+    id: 'creator-mcq-2', 
     question: 'Which of these is a version control system?',
     options: ['Photoshop', 'Git', 'Excel', 'WordPress'],
     correctAnswer: 'Git',
@@ -62,80 +62,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
 
-  const login = (email: string, name?: string, newSignupRoles?: UserMode[]) => {
+  const login = (email: string, name?: string, rolesToSet?: UserMode[]) => {
     setLoading(true);
     let userToPersist: User | null = null;
+    const existingUser = user; // User from state, potentially loaded from localStorage
 
-    if (name && newSignupRoles && newSignupRoles.length > 0) { // SIGN-UP
-      const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const isCreator = newSignupRoles.includes('creator');
-      let authoredMcqsForUser: MCQ[] = [];
+    if (name !== undefined) { // Indicates a signup or an update from onboarding profile page
+      const userId = existingUser?.id || `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const currentRoles = rolesToSet !== undefined ? rolesToSet : (existingUser?.roles || []);
+      const isNowCreator = currentRoles.includes('creator');
+      let authoredMcqsForUser: MCQ[] = existingUser?.mcqsAuthored || [];
 
-      if (isCreator) {
+      if (isNowCreator && (!existingUser || !existingUser.isCreator)) { // If becoming a creator OR new creator
         authoredMcqsForUser = sampleAuthoredMCQs.map(mcq => ({
           ...mcq,
           creatorId: userId,
           creatorName: name,
-          // Create a more unique ID for the MCQ instance for this user
           id: `${userId}-${mcq.id.replace(/creator-mcq-/g, '') || mcq.id}`
         }));
       }
-
+      
       userToPersist = {
+        ...(existingUser || {}), // Spread existing user data if available
         id: userId,
         email,
         name,
-        roles: newSignupRoles,
-        isCreator,
-        isNewUser: true, // Critical for triggering onboarding
-        streak: 0,
-        following: [],
-        points: 0,
-        questionsAnsweredCount: 0,
+        roles: currentRoles,
+        isCreator: isNowCreator,
+        isNewUser: existingUser ? existingUser.isNewUser : true, // Retain isNewUser if updating, else true for new signup
+        streak: existingUser?.streak || 0,
+        following: existingUser?.following || [],
+        points: existingUser?.points || 0,
+        questionsAnsweredCount: existingUser?.questionsAnsweredCount || 0,
         mcqsAuthored: authoredMcqsForUser,
-        testsAuthored: [],
+        testsAuthored: existingUser?.testsAuthored || [],
       };
-    } else { // SIGN-IN attempt
-      // The AuthProvider's useEffect has already attempted to load a user into the `user` state.
-      // If this `login` call is for sign-in, we use that loaded `user` if the email matches.
-      if (user && user.email === email) {
-        userToPersist = user; // Use the already loaded user from localStorage
-                               // Their `isNewUser` and `roles` will be preserved.
+       // If rolesToSet is undefined, it means it's an initial signup, so roles default to empty, isNewUser is true.
+      if (rolesToSet === undefined) {
+        userToPersist.roles = [];
+        userToPersist.isCreator = false;
+        userToPersist.isNewUser = true;
+      }
+
+    } else { // SIGN-IN attempt (name is undefined)
+      if (existingUser && existingUser.email === email) {
+        userToPersist = existingUser;
       } else {
-        // This case means:
-        // 1. No user was in localStorage (user is null).
-        // 2. A user was in localStorage, but the email from AuthForm doesn't match (mock "wrong email").
-        // For this mock, if it's a sign-in attempt and no matching user is found,
-        // we'll create a default new user profile, which will trigger onboarding.
-        // A real app would show an error in AuthForm ("User not found" or "Incorrect password").
+        // Mock: if sign-in email doesn't match stored, treat as a new user for demo.
+        // Real app: show error in AuthForm.
         const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         userToPersist = {
-            id: userId,
-            email,
-            name: email.split('@')[0],
-            roles: ['student'], // Default to student if "sign-in" fails to find user
-            isCreator: false,
-            isNewUser: true, // Treat as new because they weren't "found" with prior state
+            id: userId, email, name: email.split('@')[0],
+            roles: [], isCreator: false, isNewUser: true, // Default to no roles, needs onboarding
             streak: 0, following: [], points: 0, questionsAnsweredCount: 0, mcqsAuthored: [], testsAuthored: [],
         };
       }
     }
 
     if (userToPersist) {
-      setUser(userToPersist); // Update context state
-      localStorage.setItem('testChampionUser', JSON.stringify(userToPersist)); // Persist
+      setUser(userToPersist);
+      localStorage.setItem('testChampionUser', JSON.stringify(userToPersist));
     }
     
-    localStorage.removeItem('testChampionUserMode'); // Always clear selected mode for a new session
+    // Clear selected mode only if it's an initial signup or explicit sign-in without pre-set roles.
+    // If called from onboarding to set roles, don't clear mode yet.
+    if (name === undefined || (name !== undefined && rolesToSet === undefined)) {
+      localStorage.removeItem('testChampionUserMode');
+    }
     setLoading(false);
-    router.push('/'); // Central navigation logic in src/app/page.tsx will handle next steps
-  };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('testChampionUser');
-    localStorage.removeItem('testChampionUserMode');
-    router.push('/auth/sign-in');
+    // If it's an initial signup (name provided, but rolesToSet were not), redirect to onboarding.
+    // Otherwise, general redirection logic is in src/app/page.tsx.
+    if (name !== undefined && rolesToSet === undefined) {
+        router.push('/onboarding/terms');
+    } else if (name === undefined) { // This is a sign-in attempt
+        router.push('/'); 
+    }
+    // If called from onboarding profile page (name and rolesToSet are provided),
+    // the redirection will be handled by completeOnboarding called subsequently.
   };
   
   const completeOnboarding = () => {
@@ -144,17 +148,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const updatedUser = { ...currentUser, isNewUser: false };
       localStorage.setItem('testChampionUser', JSON.stringify(updatedUser));
       
+      // Redirection logic after onboarding is complete
       if (updatedUser.roles && updatedUser.roles.length > 1) {
         router.push('/select-role');
       } else if (updatedUser.roles && updatedUser.roles.length === 1) {
         localStorage.setItem('testChampionUserMode', updatedUser.roles[0]);
-        // Also update context if UserModeProvider needs it explicitly, though it reads from localStorage
         router.push('/dashboard');
       } else {
-        router.push('/dashboard'); // Fallback
+        // This case (no roles after onboarding) should ideally not happen if profile page enforces role selection.
+        // As a fallback, redirect to profile page again or dashboard.
+        router.push('/dashboard'); 
       }
       return updatedUser;
     });
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('testChampionUser');
+    localStorage.removeItem('testChampionUserMode');
+    router.push('/auth/sign-in');
   };
 
   const toggleFollow = useCallback((creatorId: string) => {
@@ -231,4 +244,3 @@ export function useAuth() {
   }
   return context;
 }
-

@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { BrainCircuit, Eye, EyeOff } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
-import type { UserMode } from '@/types';
+// import { Checkbox } from '@/components/ui/checkbox'; // Removed role selection from here
+// import type { UserMode } from '@/types'; // No longer needed here
 
 interface AuthFormProps {
   mode: 'signin' | 'signup';
@@ -21,17 +21,17 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedRoles, setSelectedRoles] = useState<UserMode[]>(['student']);
+  // const [selectedRoles, setSelectedRoles] = useState<UserMode[]>(['student']); // Removed
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { login } = useAuth();
 
-  const handleRoleChange = (role: UserMode) => {
-    setSelectedRoles(prev =>
-      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
-    );
-  };
+  // const handleRoleChange = (role: UserMode) => { // Removed
+  //   setSelectedRoles(prev =>
+  //     prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+  //   );
+  // };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -46,12 +46,12 @@ export function AuthForm({ mode }: AuthFormProps) {
         setError("Password must be at least 6 characters long.");
         return;
       }
-      if (selectedRoles.length === 0) {
-        setError("Please select at least one role.");
-        return;
-      }
-      // Simulate signup by calling login with name and roles
-      login(email, name, selectedRoles);
+      // if (selectedRoles.length === 0) { // Removed role validation here
+      //   setError("Please select at least one role.");
+      //   return;
+      // }
+      // Simulate signup by calling login with name. Roles will be set during onboarding.
+      login(email, name); // Pass only email and name for initial signup
     } else {
       // Simulate login
       login(email);
@@ -149,27 +149,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                     </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>I want to be a...</Label>
-                  <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="role-student"
-                        checked={selectedRoles.includes('student')}
-                        onCheckedChange={() => handleRoleChange('student')}
-                      />
-                      <Label htmlFor="role-student" className="font-normal">Student</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="role-creator"
-                        checked={selectedRoles.includes('creator')}
-                        onCheckedChange={() => handleRoleChange('creator')}
-                      />
-                      <Label htmlFor="role-creator" className="font-normal">Creator</Label>
-                    </div>
-                  </div>
-                </div>
+                {/* Role selection removed from here */}
               </>
             )}
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-0.5">
